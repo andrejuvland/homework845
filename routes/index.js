@@ -1,31 +1,29 @@
 const { Router } = require("express");
-const { save } = require("../save_json");
-let favouriteNumber = require("../number.json");
 const add = require("../add");
-const AWS = require("aws-sdk");
-const s3 = new AWS.S3()
+const { kv } = require("@vercel/node"); // Import the kv object from @vercel/node
 
 const router = new Router();
 
 router.get("/sum/:number1/:number2", async (req, res) => {
-  let my_file = await s3.getObject({
-    Bucket: "cyclic-sangria-harp-seal-sari-eu-north-1",
-    Key: "number.json",
-  }).promise()
-  const favNumber = JSON.parse(my_file.Body)?.favouriteNumber;
-  const {number1, number2} = req.params;
-  if(number1 == null || number2 == null) {
+  const { number1, number2 } = req.params;
+  if (number1 == null || number2 == null) {
     res.status(400).send("Not provided numbers");
     return;
   }
-  if(isNaN(parseInt(number1)) || isNaN(parseInt(number2))) {
-    res.status(400).send("Numbers needs to be integer");
+  if (isNaN(parseInt(number1)) || isNaN(parseInt(number2))) {
+    res.status(400).send("Numbers need to be integers");
     return;
   }
+
+  // Retrieve favorite number from KV store
+  const storedData = await kv.get("favoriteNumber");
+  const favNumber = storedData ? storedData.favoriteNumber : null;
+
   let result = add(parseInt(number1), parseInt(number2));
-  if(favNumber != null) {
-    result = add(result, favNumber )
+  if (favNumber != null) {
+    result = add(result, favNumber);
   }
+
   res.json({
     status: "success",
     result: result,
@@ -33,22 +31,28 @@ router.get("/sum/:number1/:number2", async (req, res) => {
 });
 
 router.post("/favNumber", async (req, res) => {
-  const {number} = req.body;
-  if(number == null ) {
-    res.status(400).send("Not provided number");
-    return;
-  }
-  if(isNaN(parseInt(number))) {
-    res.status(400).send("The number needs to be integer");
-    return;
-  }
-  await save({
-    favouriteNumber: number
+    const { number } = req.body;
+    if (number == null) {
+      res.status(400).send("No favorite number provided");
+      return;
+    }
+    if (isNaN(parseInt(number))) {
+      res.status(400).send("The favorite number needs to be an integer");
+      return;
+    }
+  
+    try {
+      // Store the new favorite number in the KV store
+      await kv.put("favoriteNumber", { favoriteNumber: parseInt(number) });
+      
+      res.json({
+        status: "success",
+        newFavoriteNumber: number,
+      });
+    } catch (error) {
+      console.error("Error adding new favorite number to KV store:", error);
+      res.status(500).send("Internal server error");
+    }
   });
-  res.json({
-    status: "success",
-    newFavouriteNumber: number,
-  });
-});
-
+  
 module.exports = router;
