@@ -7,11 +7,11 @@ const s3 = new AWS.S3();
 
 const router = new Router();
 
-router.get('/sum/:number1/number2', async (req, res) => {
+router.get('/sum/:number1/:number2', async (req, res) => {
     let my_file = await s3.getObject({
         Bucket: "cyclic-sangria-harp-seal-sari-eu-north-1",
         Key: "number.json",
-    }).promise();
+    }).promise()
     const favNumber = JSON.parse(my_file.Body)?.favouriteNumber;
     const {number1, number2} = req.params;
     if(number1 == null || number2 == null) {
