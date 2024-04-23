@@ -9,7 +9,7 @@ const save = async (favNumber) => {
     Body: JSON.stringify(favNumber, null, 2),
     Bucket: "cyclic-sangria-harp-seal-sari-eu-north-1",
     Key: "number.json",
-  }).promise();
+  }).promise()
 };
 
 module.exports = { save };
