@@ -3,7 +3,7 @@ const {save} = require('../save_json');
 let favouriteNumber = require('../number.json');
 const add = require('../add');
 const AWS = require('aws-sdk');
-const s3 = new AWS.S3();
+const s3 = new AWS.S3()
 
 const router = new Router();
 
@@ -42,13 +42,19 @@ router.post('/favNumber', async (req, res) => {
         res.status(400).send('The number needs to be integer');
         return;
     }
-    await save({
-        favouriteNumber: number
-    });
-    res.json({
-        status: 'success',
-        newFavouriteNumber: number,
-    });
+    try {
+
+        await save({
+            favouriteNumber: parseInt(number)
+        });
+        res.json({
+            status: 'success',
+            newFavouriteNumber: number,
+        });
+    } catch (error) {
+        console.error('Error saving favourite number:', error);
+        res.status(500).send('Internal server error');
+    }
 });
 
 module.exports = router;
